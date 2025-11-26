@@ -1,0 +1,327 @@
+type User {
+  id: ID!
+  name: String!
+  email: String!
+  role: UserRole!
+  phone: String
+  createdAt: String!
+  updatedAt: String!
+  student: Student
+  teacher: Teacher
+}
+
+type Student {
+  id: ID!
+  userId: ID!
+  admissionNo: String!
+  dob: String!
+  gender: Gender!
+  address: String
+  createdAt: String!
+  updatedAt: String!
+  user: User!
+  enrollments: [Enrollment!]!
+  attendances: [Attendance!]!
+  examResults: [ExamResult!]!
+  feeInvoices: [FeeInvoice!]!
+}
+
+type Teacher {
+  id: ID!
+  userId: ID!
+  hireDate: String!
+  specialization: String
+  createdAt: String!
+  updatedAt: String!
+  user: User!
+}
+
+type ClassSection {
+  id: ID!
+  className: String!
+  sectionName: String!
+  academicYear: String!
+  capacity: Int!
+  createdAt: String!
+  updatedAt: String!
+  enrollments: [Enrollment!]!
+  attendances: [Attendance!]!
+  exams: [Exam!]!
+}
+
+type Enrollment {
+  id: ID!
+  studentId: ID!
+  classSectionId: ID!
+  enrolledOn: String!
+  createdAt: String!
+  student: Student!
+  classSection: ClassSection!
+}
+
+type Attendance {
+  id: ID!
+  studentId: ID!
+  classSectionId: ID!
+  date: String!
+  status: AttendanceStatus!
+  recordedBy: ID!
+  remarks: String
+  createdAt: String!
+  updatedAt: String!
+  student: Student!
+  classSection: ClassSection!
+  recorder: User!
+}
+
+type Exam {
+  id: ID!
+  name: String!
+  subject: String!
+  maxMarks: Int!
+  examDate: String!
+  classSectionId: ID!
+  createdAt: String!
+  updatedAt: String!
+  classSection: ClassSection!
+  results: [ExamResult!]!
+}
+
+type ExamResult {
+  id: ID!
+  examId: ID!
+  studentId: ID!
+  obtainedMarks: Int!
+  remarks: String
+  createdAt: String!
+  updatedAt: String!
+  exam: Exam!
+  student: Student!
+}
+
+type FeeInvoice {
+  id: ID!
+  studentId: ID!
+  amountDue: Float!
+  status: InvoiceStatus!
+  dueDate: String!
+  description: String
+  createdAt: String!
+  updatedAt: String!
+  student: Student!
+  payments: [Payment!]!
+}
+
+type Payment {
+  id: ID!
+  invoiceId: ID!
+  amount: Float!
+  method: PaymentMethod!
+  txRef: String
+  paidAt: String!
+  createdAt: String!
+  invoice: FeeInvoice!
+}
+
+# Enums
+enum UserRole {
+  ADMIN
+  TEACHER
+  STUDENT
+  PARENT
+}
+
+enum Gender {
+  MALE
+  FEMALE
+  OTHER
+}
+
+enum AttendanceStatus {
+  PRESENT
+  ABSENT
+  LATE
+}
+
+enum InvoiceStatus {
+  PENDING
+  PAID
+  OVERDUE
+  CANCELLED
+}
+
+enum PaymentMethod {
+  CASH
+  CARD
+  BANK_TRANSFER
+  UPI
+  CHEQUE
+}
+
+# Pagination
+type PaginationInfo {
+  total: Int!
+  page: Int!
+  limit: Int!
+  totalPages: Int!
+  hasNextPage: Boolean!
+  hasPreviousPage: Boolean!
+}
+
+type StudentConnection {
+  data: [Student!]!
+  pagination: PaginationInfo!
+}
+
+# Authentication
+type AuthPayload {
+  accessToken: String!
+  refreshToken: String!
+  user: User!
+}
+
+# Input Types
+input RegisterUserInput {
+  name: String!
+  email: String!
+  password: String!
+  role: UserRole!
+  phone: String
+}
+
+input CreateStudentInput {
+  userId: ID!
+  admissionNo: String!
+  dob: String!
+  gender: Gender!
+  address: String
+}
+
+input CreateTeacherInput {
+  userId: ID!
+  hireDate: String!
+  specialization: String
+}
+
+input CreateClassSectionInput {
+  className: String!
+  sectionName: String!
+  academicYear: String!
+  capacity: Int
+}
+
+input AttendanceRecordInput {
+  studentId: ID!
+  classSectionId: ID!
+  date: String!
+  status: AttendanceStatus!
+  remarks: String
+}
+
+input CreateExamInput {
+  name: String!
+  subject: String!
+  maxMarks: Int!
+  examDate: String!
+  classSectionId: ID!
+}
+
+input ExamResultInput {
+  examId: ID!
+  studentId: ID!
+  obtainedMarks: Int!
+  remarks: String
+}
+
+input CreateInvoiceInput {
+  studentId: ID!
+  amountDue: Float!
+  dueDate: String!
+  description: String
+}
+
+input PaymentInput {
+  amount: Float!
+  method: PaymentMethod!
+  txRef: String
+}
+
+# Queries
+type Query {
+  # Authentication
+  me: User
+
+  # Users
+  users: [User!]!
+  user(id: ID!): User
+
+  # Students
+  students(page: Int, limit: Int): StudentConnection!
+  student(id: ID!): Student
+
+  # Teachers
+  teachers: [Teacher!]!
+  teacher(id: ID!): Teacher
+
+  # Class Sections
+  classSections(academicYear: String): [ClassSection!]!
+  classSection(id: ID!): ClassSection
+
+  # Attendance
+  attendanceForStudent(studentId: ID!, startDate: String, endDate: String): [Attendance!]!
+  attendanceForClass(classSectionId: ID!, date: String!): [Attendance!]!
+
+  # Exams
+  exams(classSectionId: ID): [Exam!]!
+  exam(id: ID!): Exam
+  examResults(studentId: ID, examId: ID): [ExamResult!]!
+
+  # Fees
+  invoices(studentId: ID, status: InvoiceStatus): [FeeInvoice!]!
+  invoice(id: ID!): FeeInvoice
+  payments(invoiceId: ID!): [Payment!]!
+}
+
+# Mutations
+type Mutation {
+  # Authentication
+  login(email: String!, password: String!): AuthPayload!
+  registerUser(input: RegisterUserInput!): User!
+
+  # Students
+  createStudent(input: CreateStudentInput!): Student!
+  updateStudent(id: ID!, input: CreateStudentInput!): Student!
+  deleteStudent(id: ID!): Boolean!
+
+  # Teachers
+  createTeacher(input: CreateTeacherInput!): Teacher!
+  updateTeacher(id: ID!, input: CreateTeacherInput!): Teacher!
+  deleteTeacher(id: ID!): Boolean!
+
+  # Class Sections
+  createClassSection(input: CreateClassSectionInput!): ClassSection!
+  updateClassSection(id: ID!, input: CreateClassSectionInput!): ClassSection!
+  deleteClassSection(id: ID!): Boolean!
+  enrollStudent(studentId: ID!, classSectionId: ID!): Enrollment!
+
+  # Attendance
+  recordAttendance(records: [AttendanceRecordInput!]!): [Attendance!]!
+
+  # Exams
+  createExam(input: CreateExamInput!): Exam!
+  updateExam(id: ID!, input: CreateExamInput!): Exam!
+  deleteExam(id: ID!): Boolean!
+  enterMarks(results: [ExamResultInput!]!): [ExamResult!]!
+
+  # Fees
+  createInvoice(input: CreateInvoiceInput!): FeeInvoice!
+  updateInvoice(id: ID!, status: InvoiceStatus!): FeeInvoice!
+  deleteInvoice(id: ID!): Boolean!
+  payInvoice(invoiceId: ID!, payment: PaymentInput!): Payment!
+}
+
+# Subscriptions
+type Subscription {
+  attendanceRecorded(classSectionId: ID!): Attendance!
+  examResultPublished(studentId: ID!): ExamResult!
+}

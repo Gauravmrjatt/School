@@ -1,0 +1,249 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum UserRole {
+  ADMIN
+  TEACHER
+  STUDENT
+  PARENT
+}
+
+enum AttendanceStatus {
+  PRESENT
+  ABSENT
+  LATE
+}
+
+enum InvoiceStatus {
+  PENDING
+  PAID
+  OVERDUE
+  CANCELLED
+}
+
+enum Gender {
+  MALE
+  FEMALE
+  OTHER
+}
+
+enum PaymentMethod {
+  CASH
+  CARD
+  BANK_TRANSFER
+  UPI
+  CHEQUE
+}
+
+// User model - Base authentication entity
+model User {
+  id           String    @id @default(uuid())
+  name         String
+  email        String    @unique
+  passwordHash String
+  role         UserRole
+  phone        String?
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+  
+  // Relations
+  student      Student?
+  teacher      Teacher?
+  
+  // Attendance recorded by this user (for teachers)
+  attendanceRecords Attendance[] @relation("RecordedBy")
+  
+  @@index([email])
+  @@index([role])
+  @@map("users")
+}
+
+// Student model
+model Student {
+  id          String   @id @default(uuid())
+  userId      String   @unique
+  admissionNo String   @unique
+  dob         DateTime
+  gender      Gender
+  address     String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  
+  // Relations
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
+  enrollments    Enrollment[]
+  attendances    Attendance[]
+  examResults    ExamResult[]
+  feeInvoices    FeeInvoice[]
+  
+  @@index([admissionNo])
+  @@index([userId])
+  @@map("students")
+}
+
+// Teacher model
+model Teacher {
+  id             String   @id @default(uuid())
+  userId         String   @unique
+  hireDate       DateTime
+  specialization String?
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+  
+  // Relations
+  user           User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
+  @@index([userId])
+  @@map("teachers")
+}
+
+// ClassSection model
+model ClassSection {
+  id           String   @id @default(uuid())
+  className    String   // e.g., "Grade 10", "Class 5"
+  sectionName  String   // e.g., "A", "B", "C"
+  academicYear String   // e.g., "2024-2025"
+  capacity     Int      @default(40)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+  
+  // Relations
+  enrollments  Enrollment[]
+  attendances  Attendance[]
+  exams        Exam[]
+  
+  @@unique([className, sectionName, academicYear])
+  @@index([academicYear])
+  @@map("class_sections")
+}
+
+// Enrollment model - Links students to class sections
+model Enrollment {
+  id             String       @id @default(uuid())
+  studentId      String
+  classSectionId String
+  enrolledOn     DateTime     @default(now())
+  createdAt      DateTime     @default(now())
+  
+  // Relations
+  student        Student      @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  classSection   ClassSection @relation(fields: [classSectionId], references: [id], onDelete: Cascade)
+  
+  @@unique([studentId, classSectionId])
+  @@index([studentId])
+  @@index([classSectionId])
+  @@map("enrollments")
+}
+
+// Attendance model
+model Attendance {
+  id             String           @id @default(uuid())
+  studentId      String
+  classSectionId String
+  date           DateTime         @db.Date
+  status         AttendanceStatus
+  recordedBy     String           // User ID of the teacher who recorded
+  remarks        String?
+  createdAt      DateTime         @default(now())
+  updatedAt      DateTime         @updatedAt
+  
+  // Relations
+  student        Student          @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  classSection   ClassSection     @relation(fields: [classSectionId], references: [id], onDelete: Cascade)
+  recorder       User             @relation("RecordedBy", fields: [recordedBy], references: [id])
+  
+  @@unique([studentId, classSectionId, date])
+  @@index([studentId])
+  @@index([classSectionId])
+  @@index([date])
+  @@map("attendances")
+}
+
+// Exam model
+model Exam {
+  id             String       @id @default(uuid())
+  name           String       // e.g., "Mid-term Math Exam"
+  subject        String
+  maxMarks       Int
+  examDate       DateTime
+  classSectionId String
+  createdAt      DateTime     @default(now())
+  updatedAt      DateTime     @updatedAt
+  
+  // Relations
+  classSection   ClassSection @relation(fields: [classSectionId], references: [id], onDelete: Cascade)
+  results        ExamResult[]
+  
+  @@index([classSectionId])
+  @@index([examDate])
+  @@map("exams")
+}
+
+// ExamResult model
+model ExamResult {
+  id            String   @id @default(uuid())
+  examId        String
+  studentId     String
+  obtainedMarks Int
+  remarks       String?
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+  
+  // Relations
+  exam          Exam     @relation(fields: [examId], references: [id], onDelete: Cascade)
+  student       Student  @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  
+  @@unique([examId, studentId])
+  @@index([examId])
+  @@index([studentId])
+  @@map("exam_results")
+}
+
+// FeeInvoice model
+model FeeInvoice {
+  id          String        @id @default(uuid())
+  studentId   String
+  amountDue   Float
+  status      InvoiceStatus @default(PENDING)
+  dueDate     DateTime
+  description String?       // e.g., "Tuition Fee - Q1 2024"
+  createdAt   DateTime      @default(now())
+  updatedAt   DateTime      @updatedAt
+  
+  // Relations
+  student     Student       @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  payments    Payment[]
+  
+  @@index([studentId])
+  @@index([status])
+  @@index([dueDate])
+  @@map("fee_invoices")
+}
+
+// Payment model
+model Payment {
+  id        String        @id @default(uuid())
+  invoiceId String
+  amount    Float
+  method    PaymentMethod
+  txRef     String?       // Transaction reference number
+  paidAt    DateTime      @default(now())
+  createdAt DateTime      @default(now())
+  
+  // Relations
+  invoice   FeeInvoice    @relation(fields: [invoiceId], references: [id], onDelete: Cascade)
+  
+  @@index([invoiceId])
+  @@index([paidAt])
+  @@map("payments")
+}
