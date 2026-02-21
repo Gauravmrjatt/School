@@ -16,7 +16,7 @@ export const feeResolvers = {
             // If querying for specific student, check access
             if (studentId) {
                 const student = await studentsService.getStudentById(studentId);
-                canAccessStudent(user, student.userId);
+                canAccessStudent(user, student.user.id);
             } else {
                 requirePermission(user, 'VIEW_ALL_INVOICES');
             }
@@ -30,8 +30,8 @@ export const feeResolvers = {
             const invoice = await feesService.getInvoiceById(id);
 
             // Check if user can access this invoice
-            const student = await studentsService.getStudentById(invoice.studentId);
-            canAccessStudent(user, student.userId);
+            const student = await studentsService.getStudentById(invoice.student.id);
+            canAccessStudent(user, student.user.id);
 
             return invoice;
         },
@@ -44,8 +44,8 @@ export const feeResolvers = {
             const user = requireAuth(context);
 
             const invoice = await feesService.getInvoiceById(invoiceId);
-            const student = await studentsService.getStudentById(invoice.studentId);
-            canAccessStudent(user, student.userId);
+            const student = await studentsService.getStudentById(invoice.student.id);
+            canAccessStudent(user, student.user.id);
 
             return await feesService.getPayments(invoiceId);
         },

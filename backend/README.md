@@ -2,343 +2,193 @@
 
 A production-grade, scalable backend system for school management built with **Node.js**, **TypeScript**, **GraphQL (Apollo Server v4)**, **PostgreSQL**, **Prisma ORM**, **Redis**, and **Kafka**.
 
+---
+
 ## 🏗️ Architecture
 
-This backend follows a **modular, event-driven architecture** with the following layers:
+The School Management System follows a **modern, event-driven microservices architecture**.
 
-- **GraphQL API Layer** - Apollo Server v4 with queries, mutations, and subscriptions
-- **Business Logic Layer** - Service modules for users, students, classes, attendance, exams, and fees
-- **Data Access Layer** - Prisma ORM for type-safe database operations
-- **Caching Layer** - Redis for performance optimization
-- **Event Streaming Layer** - Kafka for async event processing
-- **Pub/Sub Layer** - Redis Pub/Sub for real-time GraphQL subscriptions
-- **Authentication & Authorization** - JWT with role-based access control (RBAC)
+### System Overview
 
-## 📋 Prerequisites
-
-- **Node.js** >= 20.x
-- **Docker** and **Docker Compose**
-- **npm** or **yarn**
-
-## 🚀 Quick Start
-
-### 1. Clone and Setup
-
-```bash
-cd backend
-cp .env.example .env
+```
+┌─────────────────────────────────────────────────────────────────────┐
+│                          CLIENT LAYER                                │
+│  ┌──────────────┐  ┌──────────────┐  ┌──────────────┐              │
+│  │   Web App    │  │  Mobile App  │  │   Admin      │              │
+│  │  (React)     │  │  (React      │  │   Dashboard  │              │
+│  │              │  │   Native)    │  │              │              │
+│  └──────┬───────┘  └──────┬───────┘  └──────┬───────┘              │
+│         │                 │                  │                       │
+│         └─────────────────┴──────────────────┘                       │
+│                           │                                          │
+│                    HTTP/WebSocket                                    │
+│                           │                                          │
+└───────────────────────────┼──────────────────────────────────────────┘
+                            │
+┌───────────────────────────┼──────────────────────────────────────────┐
+│                    API GATEWAY LAYER                                 │
+│                           │                                          │
+│                  ┌────────▼────────┐                                 │
+│                  │  Apollo Server  │                                 │
+│                  │   (GraphQL)     │                                 │
+│                  │   Port: 4000    │                                 │
+│                  └────────┬────────┘                                 │
+│                           │                                          │
+│         ┌─────────────────┼─────────────────┐                        │
+│         │                 │                 │                        │
+│    ┌────▼────┐      ┌────▼────┐      ┌────▼────┐                   │
+│    │  Auth   │      │ GraphQL │      │  WebSocket│                  │
+│    │Middleware│      │Resolvers│      │Subscriptions│                │
+│    │  (JWT)  │      │         │      │           │                  │
+│    └────┬────┘      └────┬────┘      └────┬────┘                   │
+│         │                 │                 │                        │
+└─────────┼─────────────────┼─────────────────┼────────────────────────┘
+          │                 │                 │
+┌─────────┼─────────────────┼─────────────────┼────────────────────────┐
+│         │      BUSINESS LOGIC LAYER         │                        │
+│         │                 │                 │                        │
+│    ┌────▼────┐       ┌────▼────┐      ┌────▼────┐                   │
+│    │  Users  │       │Students │      │ Classes │                   │
+│    │ Service │       │ Service │      │ Service │                   │
+│    └────┬────┘       └────┬────┘      └────┬────┘                   │
+│         │                 │                 │                        │
+│    ┌────▼────┐       ┌────▼────┐      ┌────▼────┐                   │
+│    │Attendance│      │  Exams  │      │  Fees   │                   │
+│    │ Service │       │ Service │      │ Service │                   │
+│    └────┬────┘       └────┬────┘      └────┬────┘                   │
+│         │                 │                 │                        │
+│         └─────────────────┼─────────────────┘                        │
+└───────────────────────────┼──────────────────────────────────────────┘
+                            │
+          ┌─────────────────┼─────────────────┐
+          │                 │                 │
+┌─────────▼────────┐ ┌──────▼──────┐ ┌───────▼────────┐
+│  DATA LAYER      │ │ CACHE LAYER │ │  EVENT LAYER   │
+│                  │ │             │ │                │
+│  ┌───────────┐   │ │ ┌─────────┐ │ │ ┌────────────┐ │
+│  │ Prisma ORM│   │ │ │  Redis  │ │ │ │   Kafka    │ │
+│  └─────┬─────┘   │ │ │  Cache  │ │ │ │  Producer  │ │
+│        │         │ │ │Port:6379│ │ │ └──────┬─────┘ │
+│  ┌─────▼─────┐   │ │ └─────────┘ │ │        │       │
+│  │PostgreSQL │   │ │             │ │ ┌──────▼─────┐ │
+│  │  Database │   │ │ ┌─────────┐ │ │ │   Topics   │ │
+│  │Port: 5432 │   │ │ │  Redis  │ │ │ │ - attendance│
+│  └───────────┘   │ │ │ Pub/Sub │ │ │ │ - exams    │ │
+│                  │ │ │         │ │ │ │ - payments │ │
+│                  │ │ │         │ │ │ │ - users    │ │
+│                  │ │ └────┬────┘ │ │ └──────┬─────┘ │
+│                  │      │      │ │ └──────┬─────┘ │
+│                  └──────┼──────┘ │        │       │
+│                         │        │ ┌──────▼─────┐ │
+│                         │        │ │   Kafka    │ │
+│                         │        │ │  Consumer  │ │
+│                         │        │ └──────┬─────┘ │
+│                         │        │        │       │
+│                         └────────┼────────┘       │
+│                                  │                │
+│                                  └────────────────┘
 ```
 
-### 2. Install Dependencies
+### Key Components
 
-```bash
-npm install
-```
+1.  **API Gateway Layer (Apollo Server v4)**
+    *   **GraphQL Endpoint**: `http://localhost:4000/graphql`
+    *   **WebSocket Endpoint**: `ws://localhost:4000/graphql`
+    *   **Features**: Type-safe schema, real-time subscriptions, request validation.
 
-### 3. Start Services with Docker Compose
+2.  **Authentication & Authorization**
+    *   **JWT**: Access tokens (15m) and Refresh tokens (7d).
+    *   **RBAC**: Roles for Admin, Teacher, Student, and Parent.
 
-```bash
-docker-compose up -d
-```
+3.  **Business Logic Services**
+    *   Modular services for Users, Students, Classes, Attendance, Exams, and Fees.
+    *   Implements caching, event publishing, and business validation.
 
-This will start:
-- PostgreSQL (port 5432)
-- Redis (port 6379)
-- Zookeeper (port 2181)
-- Kafka (port 9092)
-- Backend application (port 4000)
+4.  **Data Layer**
+    *   **PostgreSQL**: Normalized relational database.
+    *   **Prisma ORM**: Type-safe database access and migrations.
 
-### 4. Run Database Migrations
+5.  **Caching Layer (Redis)**
+    *   TTL-based caching for high-read data (Profiles, Class Sections).
+    *   Cache-aside pattern.
 
-```bash
-npm run prisma:migrate
-```
+6.  **Event Streaming Layer (Kafka)**
+    *   Async processing for attendance, exam results, and payments.
+    *   Decouples services and enables real-time features.
 
-### 5. Generate Prisma Client
+---
 
-```bash
-npm run prisma:generate
-```
+## 🛠️ Technology Stack
 
-### 6. Access GraphQL Playground
+*   **Runtime**: Node.js 20.x
+*   **Language**: TypeScript 5.3
+*   **API**: GraphQL (Apollo Server v4)
+*   **Database**: PostgreSQL 16
+*   **ORM**: Prisma 5.9
+*   **Cache**: Redis 7
+*   **Message Broker**: Apache Kafka 7.5
+*   **Infrastructure**: Docker & Docker Compose
 
-Open your browser and navigate to:
-```
-http://localhost:4000/graphql
-```
+---
 
-## 🗄️ Database Schema
+## 🚀 Quick Start Guide
 
-The system manages the following entities:
+### Prerequisites
 
-- **Users** - Authentication and role management (Admin, Teacher, Student, Parent)
-- **Students** - Student profiles with admission details
-- **Teachers** - Teacher profiles with specialization
-- **ClassSections** - Class and section management
-- **Enrollments** - Student-class relationships
-- **Attendance** - Daily attendance tracking
-- **Exams** - Exam scheduling and management
-- **ExamResults** - Student exam scores
-- **FeeInvoices** - Fee billing and invoicing
-- **Payments** - Payment transactions
+*   ✅ Docker Desktop installed and running
+*   ✅ Node.js 20.x or higher
+*   ✅ npm or yarn
+*   ✅ Ports 4000, 5432, 6379, 9092 available
 
-## 🔐 Authentication & Authorization
+### Installation Steps
 
-### JWT Authentication
+1.  **Navigate to Backend Directory**
+    ```bash
+    cd backend
+    ```
 
-The system uses JWT tokens for authentication:
-- **Access Token**: 15 minutes expiry
-- **Refresh Token**: 7 days expiry
+2.  **Install Dependencies**
+    ```bash
+    npm install
+    ```
 
-### RBAC Permissions
+3.  **Setup Environment Variables**
+    ```bash
+    cp .env.example .env
+    ```
 
-| Role | Permissions |
-|------|-------------|
-| **Admin** | Full access to all operations |
-| **Teacher** | Manage attendance, exams, marks, view students |
-| **Student** | View own results, attendance, invoices |
-| **Parent** | View child's results, attendance, pay fees |
+4.  **Start Services with Docker Compose**
+    ```bash
+    docker-compose up -d
+    ```
+    *   Starts PostgreSQL, Redis, Zookeeper, Kafka, and the Backend App.
 
-## 📡 GraphQL API
+5.  **Run Database Migrations**
+    ```bash
+    npm run prisma:migrate
+    ```
 
-### Example Queries
+6.  **Generate Prisma Client**
+    ```bash
+    npm run prisma:generate
+    ```
 
-#### Login
-```graphql
-mutation {
-  login(email: "admin@school.com", password: "password123") {
-    accessToken
-    refreshToken
-    user {
-      id
-      name
-      email
-      role
-    }
-  }
-}
-```
+7.  **Start Development Server**
+    ```bash
+    npm run dev
+    ```
+    *   Server ready at `http://localhost:4000/graphql`
 
-#### Get Students (with pagination)
-```graphql
-query {
-  students(page: 1, limit: 10) {
-    data {
-      id
-      admissionNo
-      user {
-        name
-        email
-      }
-    }
-    pagination {
-      total
-      page
-      totalPages
-      hasNextPage
-    }
-  }
-}
-```
+### Testing the API
 
-#### Record Attendance (bulk)
-```graphql
-mutation {
-  recordAttendance(records: [
-    {
-      studentId: "student-id-1"
-      classSectionId: "class-id-1"
-      date: "2024-01-15"
-      status: PRESENT
-    },
-    {
-      studentId: "student-id-2"
-      classSectionId: "class-id-1"
-      date: "2024-01-15"
-      status: ABSENT
-    }
-  ]) {
-    id
-    status
-    student {
-      user {
-        name
-      }
-    }
-  }
-}
-```
+You can use the **GraphQL Playground** at `http://localhost:4000/graphql` to interact with the API.
 
-#### Enter Exam Marks (bulk)
-```graphql
-mutation {
-  enterMarks(results: [
-    {
-      examId: "exam-id-1"
-      studentId: "student-id-1"
-      obtainedMarks: 85
-    },
-    {
-      examId: "exam-id-1"
-      studentId: "student-id-2"
-      obtainedMarks: 92
-    }
-  ]) {
-    id
-    obtainedMarks
-    student {
-      user {
-        name
-      }
-    }
-  }
-}
-```
-
-### Example Subscriptions
-
-#### Real-time Attendance Updates
-```graphql
-subscription {
-  attendanceRecorded(classSectionId: "class-id-1") {
-    id
-    status
-    student {
-      user {
-        name
-      }
-    }
-  }
-}
-```
-
-#### Real-time Exam Results
-```graphql
-subscription {
-  examResultPublished(studentId: "student-id-1") {
-    id
-    obtainedMarks
-    exam {
-      name
-      subject
-      maxMarks
-    }
-  }
-}
-```
-
-## 🔄 Event Flow Example
-
-### Attendance Recording Flow
-
-1. **GraphQL Mutation** - Teacher records attendance via `recordAttendance` mutation
-2. **Service Layer** - `AttendanceService` validates and saves to database
-3. **Kafka Producer** - Publishes `attendance.recorded` event to Kafka topic
-4. **Kafka Consumer** - Consumes event and processes it
-5. **Redis Pub/Sub** - Consumer publishes to Redis channel `attendance:<classSectionId>`
-6. **GraphQL Subscription** - Connected clients receive real-time update via WebSocket
-
-## 🛠️ Development
-
-### Run in Development Mode
-
-```bash
-npm run dev
-```
-
-### Build for Production
-
-```bash
-npm run build
-npm start
-```
-
-### Prisma Commands
-
-```bash
-# Generate Prisma Client
-npm run prisma:generate
-
-# Create migration
-npm run prisma:migrate
-
-# Deploy migrations
-npm run prisma:deploy
-
-# Open Prisma Studio
-npm run prisma:studio
-```
-
-### Setup Kafka Topics
-
-```bash
-npm run kafka:topics
-```
-
-## 🐳 Docker Commands
-
-```bash
-# Start all services
-docker-compose up -d
-
-# View logs
-docker-compose logs -f backend
-
-# Stop all services
-docker-compose down
-
-# Rebuild and restart
-docker-compose up -d --build
-
-# Remove volumes (clean slate)
-docker-compose down -v
-```
-
-## 📊 Monitoring & Logging
-
-Logs are written to:
-- `logs/combined.log` - All logs
-- `logs/error.log` - Error logs only
-- `logs/exceptions.log` - Uncaught exceptions
-- `logs/rejections.log` - Unhandled promise rejections
-
-## 🧪 Testing
-
-### Health Check
-
+**Health Check:**
 ```bash
 curl http://localhost:4000/health
 ```
 
-Response:
-```json
-{
-  "status": "ok",
-  "timestamp": "2024-01-15T10:30:00.000Z",
-  "services": {
-    "database": "connected",
-    "redis": "connected",
-    "kafka": "connected"
-  }
-}
-```
-
-## 🔧 Environment Variables
-
-| Variable | Description | Default |
-|----------|-------------|---------|
-| `NODE_ENV` | Environment mode | `development` |
-| `PORT` | Server port | `4000` |
-| `DATABASE_URL` | PostgreSQL connection string | - |
-| `REDIS_HOST` | Redis host | `localhost` |
-| `REDIS_PORT` | Redis port | `6379` |
-| `KAFKA_BROKERS` | Kafka broker addresses | `localhost:9092` |
-| `JWT_ACCESS_SECRET` | JWT access token secret | - |
-| `JWT_REFRESH_SECRET` | JWT refresh token secret | - |
-| `JWT_ACCESS_EXPIRY` | Access token expiry | `15m` |
-| `JWT_REFRESH_EXPIRY` | Refresh token expiry | `7d` |
-| `BCRYPT_SALT_ROUNDS` | Password hashing rounds | `10` |
-| `LOG_LEVEL` | Logging level | `info` |
+---
 
 ## 📁 Project Structure
 
@@ -361,39 +211,33 @@ backend/
 └── package.json         # Dependencies
 ```
 
+---
+
 ## 🚨 Troubleshooting
 
-### Kafka Connection Issues
+### Common Issues
 
-If Kafka fails to connect, ensure Zookeeper is running:
-```bash
-docker-compose logs zookeeper
-docker-compose logs kafka
-```
+*   **Port Conflicts**: Ensure ports 4000, 5432, 6379, and 9092 are free.
+    ```bash
+    lsof -i :4000
+    kill -9 <PID>
+    ```
+*   **Kafka Connection Failed**: Restart Zookeeper and Kafka.
+    ```bash
+    docker-compose restart zookeeper kafka
+    ```
+*   **Database Migration Errors**: Reset the database volume.
+    ```bash
+    docker-compose down -v
+    docker-compose up -d postgres
+    npm run prisma:migrate
+    ```
 
-### Database Migration Errors
-
-Reset the database:
-```bash
-docker-compose down -v
-docker-compose up -d postgres
-npm run prisma:migrate
-```
-
-### Redis Connection Issues
-
-Check Redis status:
-```bash
-docker-compose exec redis redis-cli ping
-```
+---
 
 ## 📝 License
 
 MIT
-
-## 👥 Contributing
-
-This is a production-grade school management system. Contributions are welcome!
 
 ---
 

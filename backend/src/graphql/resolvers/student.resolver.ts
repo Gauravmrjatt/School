@@ -20,7 +20,7 @@ export const studentResolvers = {
             const user = requireAuth(context);
 
             const student = await studentsService.getStudentById(id);
-            canAccessStudent(user, student.userId);
+            canAccessStudent(user, student.user.id);
 
             return student;
         },

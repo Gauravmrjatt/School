@@ -1,4 +1,3 @@
-import { GraphQLError } from 'graphql';
 import { verifyToken, TokenPayload } from '../utils/auth';
 import { AuthenticationError } from '../utils/errors';
 import { logger } from '../utils/logger';

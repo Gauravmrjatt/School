@@ -1,11 +1,11 @@
 {
-  "/_not-found/page": "app/_not-found/page.js",
-  "/admin/announcements/page": "app/admin/announcements/page.js",
-  "/admin/dashboard/page": "app/admin/dashboard/page.js",
-  "/admin/students/page": "app/admin/students/page.js",
-  "/admin/teachers/page": "app/admin/teachers/page.js",
-  "/auth/forgot-password/page": "app/auth/forgot-password/page.js",
-  "/auth/login/page": "app/auth/login/page.js",
-  "/auth/signup/page": "app/auth/signup/page.js",
-  "/page": "app/page.js"
+  "/attendance/page": "app/attendance/page.js",
+  "/classes/page": "app/classes/page.js",
+  "/dashboard/page": "app/dashboard/page.js",
+  "/exams/page": "app/exams/page.js",
+  "/fees/page": "app/fees/page.js",
+  "/login/page": "app/login/page.js",
+  "/page": "app/page.js",
+  "/students/page": "app/students/page.js",
+  "/teachers/page": "app/teachers/page.js"
 }

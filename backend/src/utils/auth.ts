@@ -1,11 +1,11 @@
-import jwt from 'jsonwebtoken';
+import jwt, { Secret, SignOptions } from 'jsonwebtoken';
 import bcrypt from 'bcrypt';
 import { logger } from './logger';
 
-const JWT_ACCESS_SECRET = process.env.JWT_ACCESS_SECRET || 'default-access-secret';
-const JWT_REFRESH_SECRET = process.env.JWT_REFRESH_SECRET || 'default-refresh-secret';
-const JWT_ACCESS_EXPIRY = process.env.JWT_ACCESS_EXPIRY || '15m';
-const JWT_REFRESH_EXPIRY = process.env.JWT_REFRESH_EXPIRY || '7d';
+const JWT_ACCESS_SECRET: Secret = process.env.JWT_ACCESS_SECRET || 'default-access-secret';
+const JWT_REFRESH_SECRET: Secret = process.env.JWT_REFRESH_SECRET || 'default-refresh-secret';
+const JWT_ACCESS_EXPIRY: string | number = process.env.JWT_ACCESS_EXPIRY || '15m';
+const JWT_REFRESH_EXPIRY: string | number = process.env.JWT_REFRESH_EXPIRY || '7d';
 const BCRYPT_SALT_ROUNDS = parseInt(process.env.BCRYPT_SALT_ROUNDS || '10', 10);
 
 export interface TokenPayload {
@@ -19,14 +19,14 @@ export interface TokenPayload {
  */
 export const generateAccessToken = (userId: string, role: string, email: string): string => {
     const payload: TokenPayload = { userId, role, email };
-    return jwt.sign(payload, JWT_ACCESS_SECRET, { expiresIn: JWT_ACCESS_EXPIRY });
+    return jwt.sign(payload, JWT_ACCESS_SECRET, { expiresIn: JWT_ACCESS_EXPIRY } as SignOptions);
 };
 
 /**
  * Generate JWT refresh token
  */
 export const generateRefreshToken = (userId: string): string => {
-    return jwt.sign({ userId }, JWT_REFRESH_SECRET, { expiresIn: JWT_REFRESH_EXPIRY });
+    return jwt.sign({ userId }, JWT_REFRESH_SECRET, { expiresIn: JWT_REFRESH_EXPIRY } as SignOptions);
 };
 
 /**

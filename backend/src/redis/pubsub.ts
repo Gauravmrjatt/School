@@ -78,7 +78,7 @@ export class RedisPubSub {
     /**
      * Get async iterator for GraphQL subscriptions
      */
-    asyncIterator<T>(channels: string | string[]): AsyncIterator<T> {
+    asyncIterator<T>(channels: string | string[]): AsyncIterableIterator<T> {
         const channelArray = Array.isArray(channels) ? channels : [channels];
         const pullQueue: Array<(value: IteratorResult<T>) => void> = [];
         const pushQueue: T[] = [];
@@ -111,7 +111,7 @@ export class RedisPubSub {
 
         return {
             next: () => {
-                return listening ? pullValue() : this.return!();
+                return listening ? pullValue() : Promise.resolve({ value: undefined as any, done: true });
             },
             return: async () => {
                 listening = false;
@@ -125,7 +125,7 @@ export class RedisPubSub {
                 pushQueue.length = 0;
                 return { value: undefined as any, done: true };
             },
-            throw: async (error) => {
+            throw: async () => {
                 listening = false;
                 return { value: undefined as any, done: true };
             },

@@ -34,7 +34,7 @@ export const examResolvers = {
             // If querying for specific student, check access
             if (studentId) {
                 const student = await studentsService.getStudentById(studentId);
-                canAccessStudent(user, student.userId);
+                canAccessStudent(user, student.user.id);
             } else {
                 requirePermission(user, 'VIEW_ALL_RESULTS');
             }

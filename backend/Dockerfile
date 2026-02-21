@@ -12,6 +12,9 @@ COPY tsconfig.json ./
 # Install dependencies
 RUN npm ci
 
+# Install OpenSSL for Prisma
+RUN apk add --no-cache openssl
+
 # Copy source code
 COPY src ./src
 COPY prisma ./prisma
@@ -33,6 +36,9 @@ COPY package*.json ./
 # Install production dependencies only
 RUN npm ci --only=production
 
+# Install OpenSSL for Prisma
+RUN apk add --no-cache openssl
+
 # Copy Prisma schema and generated client
 COPY --from=builder /app/prisma ./prisma
 COPY --from=builder /app/node_modules/.prisma ./node_modules/.prisma
@@ -45,7 +51,7 @@ EXPOSE 4000
 
 # Health check
 HEALTHCHECK --interval=30s --timeout=3s --start-period=40s --retries=3 \
-  CMD node -e "require('http').get('http://localhost:4000/.well-known/apollo/server-health', (r) => {process.exit(r.statusCode === 200 ? 0 : 1)})"
+  CMD node -e "require('http').get('http://localhost:4000/health', (r) => {process.exit(r.statusCode === 200 ? 0 : 1)})"
 
 # Start the application
 CMD ["node", "dist/server.js"]

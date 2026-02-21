@@ -1,27 +1,15 @@
-# School Management System - API Documentation
+# School Management System API
 
-## Table of Contents
-- [Authentication](#authentication)
-- [Users API](#users-api)
-- [Students API](#students-api)
-- [Teachers API](#teachers-api)
-- [Classes API](#classes-api)
-- [Attendance API](#attendance-api)
-- [Exams API](#exams-api)
-- [Fees API](#fees-api)
-- [Subscriptions](#subscriptions)
-- [Error Codes](#error-codes)
-
----
+The School Management System API is organized around **GraphQL**. Our API has predictable resource-oriented URLs, accepts form-encoded request bodies, returns JSON-encoded responses, and uses standard HTTP response codes, authentication, and verbs.
 
 ## Authentication
 
+The API uses **JWT (JSON Web Tokens)** for authentication.
+
 ### Login
-Authenticate a user and receive JWT tokens.
+To authenticate, you must first exchange your credentials for an access token.
 
-**Endpoint:** `POST /graphql`
-
-**Query:**
+**Mutation**
 ```graphql
 mutation Login($email: String!, $password: String!) {
   login(email: $email, password: $password) {
@@ -30,49 +18,51 @@ mutation Login($email: String!, $password: String!) {
     user {
       id
       name
-      email
       role
     }
   }
 }
 ```
 
-**Variables:**
+**Variables**
 ```json
 {
   "email": "admin@school.com",
-  "password": "SecurePassword123!"
+  "password": "password123"
 }
 ```
 
-**Response:**
-```json
-{
-  "data": {
-    "login": {
-      "accessToken": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",
-      "refreshToken": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",
-      "user": {
-        "id": "user-123",
-        "name": "Admin User",
-        "email": "admin@school.com",
-        "role": "ADMIN"
-      }
-    }
+### Authorization Header
+Include the `accessToken` in the `Authorization` header for all protected requests:
+
+```
+Authorization: Bearer <your_access_token>
+```
+
+---
+
+## Users
+
+### Get Current User
+Retrieve details about the currently authenticated user.
+
+**Query**
+```graphql
+query Me {
+  me {
+    id
+    name
+    email
+    role
+    phone
   }
 }
 ```
 
-**Authorization Header:**
-For all subsequent requests, include:
-```
-Authorization: Bearer <accessToken>
-```
-
 ### Register User
-Create a new user account (Admin only).
+Create a new user account. **Requires ADMIN role.**
 
-**Query:**
+**Mutation**
 ```graphql
 mutation RegisterUser($input: RegisterUserInput!) {
   registerUser(input: $input) {
@@ -85,7 +75,7 @@ mutation RegisterUser($input: RegisterUserInput!) {
 }
 ```
 
-**Variables:**
+**Variables**
 ```json
 {
   "input": {
@@ -98,70 +88,19 @@ mutation RegisterUser($input: RegisterUserInput!) {
 }
 ```
 
-**Permissions:** `ADMIN` only
-
 ---
 
-## Users API
-
-### Get Current User
-
-**Query:**
-```graphql
-query Me {
-  me {
-    id
-    name
-    email
-    role
-    phone
-    student {
-      id
-      admissionNo
-    }
-    teacher {
-      id
-      specialization
-    }
-  }
-}
-```
-
-**Permissions:** Authenticated users
-
-### Get All Users
-
-**Query:**
-```graphql
-query GetUsers {
-  users {
-    id
-    name
-    email
-    role
-    phone
-    createdAt
-  }
-}
-```
-
-**Permissions:** `ADMIN` only
-
----
-
-## Students API
+## Students
 
 ### Create Student
+Create a new student profile linked to a user account. **Requires ADMIN role.**
 
-**Query:**
+**Mutation**
 ```graphql
 mutation CreateStudent($input: CreateStudentInput!) {
   createStudent(input: $input) {
     id
     admissionNo
-    dob
-    gender
-    address
     user {
       name
       email
@@ -170,24 +109,23 @@ mutation CreateStudent($input: CreateStudentInput!) {
 }
 ```
 
-**Variables:**
+**Variables**
 ```json
 {
   "input": {
-    "userId": "user-123",
+    "userId": "user_id_here",
     "admissionNo": "STU2024001",
     "dob": "2010-05-15",
     "gender": "MALE",
-    "address": "123 Main Street, City, State"
+    "address": "123 Main St"
   }
 }
 ```
 
-**Permissions:** `ADMIN` only
+### List Students
+Retrieve a paginated list of students.
 
-### Get Students (Paginated)
-
-**Query:**
+**Query**
 ```graphql
 query GetStudents($page: Int, $limit: Int) {
   students(page: $page, limit: $limit) {
@@ -196,66 +134,25 @@ query GetStudents($page: Int, $limit: Int) {
       admissionNo
       user {
         name
-        email
-      }
-      enrollments {
-        classSection {
-          className
-          sectionName
-        }
       }
     }
     pagination {
       total
       page
-      limit
       totalPages
-      hasNextPage
-      hasPreviousPage
     }
   }
 }
 ```
-
-**Variables:**
-```json
-{
-  "page": 1,
-  "limit": 20
-}
-```
-
-**Permissions:** `ADMIN`, `TEACHER`
-
-### Get Single Student
-
-**Query:**
-```graphql
-query GetStudent($id: ID!) {
-  student(id: $id) {
-    id
-    admissionNo
-    dob
-    gender
-    address
-    user {
-      name
-      email
-      phone
-    }
-  }
-}
-```
-
-**Permissions:** `ADMIN`, `TEACHER`, or own student data
 
 ---
 
-## Classes API
+## Classes
 
 ### Create Class Section
+Create a new class section for an academic year. **Requires ADMIN role.**
 
-**Query:**
+**Mutation**
 ```graphql
 mutation CreateClass($input: CreateClassSectionInput!) {
   createClassSection(input: $input) {
@@ -263,64 +160,19 @@ mutation CreateClass($input: CreateClassSectionInput!) {
     className
     sectionName
     academicYear
-    capacity
   }
 }
 ```
-
-**Variables:**
-```json
-{
-  "input": {
-    "className": "Grade 10",
-    "sectionName": "A",
-    "academicYear": "2024-2025",
-    "capacity": 40
-  }
-}
-```
-
-**Permissions:** `ADMIN` only
-
-### Get Class Sections
-
-**Query:**
-```graphql
-query GetClassSections($academicYear: String) {
-  classSections(academicYear: $academicYear) {
-    id
-    className
-    sectionName
-    academicYear
-    capacity
-    enrollments {
-      student {
-        admissionNo
-        user {
-          name
-        }
-      }
-    }
-  }
-}
-```
-
-**Permissions:** `ADMIN`, `TEACHER`, `STUDENT`
 
 ### Enroll Student
+Enroll a student into a class section.
 
-**Query:**
+**Mutation**
 ```graphql
 mutation EnrollStudent($studentId: ID!, $classSectionId: ID!) {
   enrollStudent(studentId: $studentId, classSectionId: $classSectionId) {
     id
     enrolledOn
-    student {
-      admissionNo
-      user {
-        name
-      }
-    }
     classSection {
       className
       sectionName
@@ -329,22 +181,19 @@ mutation EnrollStudent($studentId: ID!, $classSectionId: ID!) {
 }
 ```
 
-**Permissions:** `ADMIN` only
-
 ---
 
-## Attendance API
+## Attendance
 
-### Record Attendance (Bulk)
+### Record Attendance
+Record attendance for multiple students in a class. **Requires TEACHER or ADMIN role.**
 
-**Query:**
+**Mutation**
 ```graphql
 mutation RecordAttendance($records: [AttendanceRecordInput!]!) {
   recordAttendance(records: $records) {
     id
-    date
     status
-    remarks
     student {
       admissionNo
       user {
@@ -355,19 +204,19 @@ mutation RecordAttendance($records: [AttendanceRecordInput!]!) {
 }
 ```
 
-**Variables:**
+**Variables**
 ```json
 {
   "records": [
     {
-      "studentId": "student-1",
-      "classSectionId": "class-1",
+      "studentId": "student_1",
+      "classSectionId": "class_1",
       "date": "2024-01-15",
       "status": "PRESENT"
     },
     {
-      "studentId": "student-2",
-      "classSectionId": "class-1",
+      "studentId": "student_2",
+      "classSectionId": "class_1",
       "date": "2024-01-15",
       "status": "ABSENT",
       "remarks": "Sick leave"
@@ -376,295 +225,110 @@ mutation RecordAttendance($records: [AttendanceRecordInput!]!) {
 }
 ```
 
-**Permissions:** `ADMIN`, `TEACHER`
+### Real-time Attendance Updates
+Subscribe to real-time attendance events for a specific class.
 
-**Event:** Publishes `attendance.recorded` to Kafka → Real-time subscription update
-
-### Get Student Attendance
-
-**Query:**
+**Subscription**
 ```graphql
-query GetStudentAttendance($studentId: ID!, $startDate: String, $endDate: String) {
-  attendanceForStudent(
-    studentId: $studentId
-    startDate: $startDate
-    endDate: $endDate
-  ) {
+subscription OnAttendanceRecorded($classSectionId: ID!) {
+  attendanceRecorded(classSectionId: $classSectionId) {
     id
-    date
     status
-    remarks
-    classSection {
-      className
-      sectionName
+    student {
+      user {
+        name
+      }
     }
   }
 }
 ```
 
-**Permissions:** `ADMIN`, `TEACHER`, or own student data
-
 ---
 
-## Exams API
+## Exams
 
 ### Create Exam
+Schedule a new exam.
 
-**Query:**
+**Mutation**
 ```graphql
 mutation CreateExam($input: CreateExamInput!) {
   createExam(input: $input) {
     id
     name
     subject
-    maxMarks
     examDate
-    classSection {
-      className
-      sectionName
-    }
   }
 }
 ```
 
-**Variables:**
-```json
-{
-  "input": {
-    "name": "Mid-term Mathematics Exam",
-    "subject": "Mathematics",
-    "maxMarks": 100,
-    "examDate": "2024-02-15",
-    "classSectionId": "class-123"
-  }
-}
-```
+### Enter Marks
+Submit exam results for students.
 
-**Permissions:** `ADMIN`, `TEACHER`
-
-### Enter Marks (Bulk)
-
-**Query:**
+**Mutation**
 ```graphql
 mutation EnterMarks($results: [ExamResultInput!]!) {
   enterMarks(results: $results) {
     id
     obtainedMarks
-    remarks
     student {
-      admissionNo
       user {
         name
       }
     }
-    exam {
-      name
-      subject
-      maxMarks
-    }
   }
 }
 ```
-
-**Variables:**
-```json
-{
-  "results": [
-    {
-      "examId": "exam-123",
-      "studentId": "student-1",
-      "obtainedMarks": 85,
-      "remarks": "Excellent"
-    },
-    {
-      "examId": "exam-123",
-      "studentId": "student-2",
-      "obtainedMarks": 92
-    }
-  ]
-}
-```
-
-**Permissions:** `ADMIN`, `TEACHER`
-
-**Event:** Publishes `exam.results.published` to Kafka → Real-time subscription update
-
-### Get Exam Results
-
-**Query:**
-```graphql
-query GetExamResults($studentId: ID, $examId: ID) {
-  examResults(studentId: $studentId, examId: $examId) {
-    id
-    obtainedMarks
-    remarks
-    exam {
-      name
-      subject
-      maxMarks
-      examDate
-    }
-  }
-}
-```
-
-**Permissions:** `ADMIN`, `TEACHER`, or own student results
 
 ---
 
-## Fees API
+## Fees
 
 ### Create Invoice
+Generate a fee invoice for a student.
 
-**Query:**
+**Mutation**
 ```graphql
 mutation CreateInvoice($input: CreateInvoiceInput!) {
   createInvoice(input: $input) {
     id
     amountDue
-    status
     dueDate
     description
-    student {
-      admissionNo
-      user {
-        name
-      }
-    }
   }
 }
 ```
-
-**Variables:**
-```json
-{
-  "input": {
-    "studentId": "student-123",
-    "amountDue": 5000.00,
-    "dueDate": "2024-03-31",
-    "description": "Tuition Fee - Q1 2024"
-  }
-}
-```
-
-**Permissions:** `ADMIN` only
 
 ### Pay Invoice
+Process a payment for an invoice.
 
-**Query:**
+**Mutation**
 ```graphql
 mutation PayInvoice($invoiceId: ID!, $payment: PaymentInput!) {
   payInvoice(invoiceId: $invoiceId, payment: $payment) {
     id
     amount
-    method
-    txRef
+    status
     paidAt
-    invoice {
-      id
-      status
-      amountDue
-    }
-  }
-}
-```
-
-**Variables:**
-```json
-{
-  "invoiceId": "invoice-123",
-  "payment": {
-    "amount": 5000.00,
-    "method": "BANK_TRANSFER",
-    "txRef": "TXN123456789"
-  }
-}
-```
-
-**Permissions:** `ADMIN`, `PARENT`
-
-**Event:** Publishes `payment.completed` to Kafka
-
-### Get Invoices
-
-**Query:**
-```graphql
-query GetInvoices($studentId: ID, $status: InvoiceStatus) {
-  invoices(studentId: $studentId, status: $status) {
-    id
-    amountDue
-    status
-    dueDate
-    description
-    payments {
-      id
-      amount
-      method
-      paidAt
-    }
-  }
-}
-```
-
-**Permissions:** `ADMIN`, or own student invoices
-
----
-
-## Subscriptions
-
-### Attendance Updates
-
-**Subscription:**
-```graphql
-subscription OnAttendanceRecorded($classSectionId: ID!) {
-  attendanceRecorded(classSectionId: $classSectionId) {
-    id
-    date
-    status
-    student {
-      admissionNo
-      user {
-        name
-      }
-    }
-  }
-}
-```
-
-**WebSocket URL:** `ws://localhost:4000/graphql`
-
-**Connection Params:**
-```json
-{
-  "authorization": "Bearer <accessToken>"
-}
-```
-
-### Exam Results Updates
-
-**Subscription:**
-```graphql
-subscription OnExamResultPublished($studentId: ID!) {
-  examResultPublished(studentId: $studentId) {
-    id
-    obtainedMarks
-    remarks
-    exam {
-      name
-      subject
-      maxMarks
-    }
   }
 }
 ```
 
 ---
 
-## Error Codes
+## Errors
 
-### Authentication Errors
+The API uses standard GraphQL error formats.
 
-**Code:** `UNAUTHENTICATED`
+| Code | Description |
+| :--- | :--- |
+| `UNAUTHENTICATED` | You must be logged in to perform this action. |
+| `FORBIDDEN` | You do not have permission to perform this action. |
+| `BAD_USER_INPUT` | The input provided was invalid (e.g., invalid email). |
+| `NOT_FOUND` | The requested resource could not be found. |
+| `CONFLICT` | The resource already exists (e.g., duplicate email). |
+
+**Example Error Response**
 ```json
 {
   "errors": [
@@ -677,108 +341,3 @@ subscription OnExamResultPublished($studentId: ID!) {
   ]
 }
 ```
-
-### Authorization Errors
-
-**Code:** `FORBIDDEN`
-```json
-{
-  "errors": [
-    {
-      "message": "You do not have permission to perform this action",
-      "extensions": {
-        "code": "FORBIDDEN"
-      }
-    }
-  ]
-}
-```
-
-### Validation Errors
-
-**Code:** `BAD_USER_INPUT`
-```json
-{
-  "errors": [
-    {
-      "message": "Invalid email format",
-      "extensions": {
-        "code": "BAD_USER_INPUT",
-        "field": "email"
-      }
-    }
-  ]
-}
-```
-
-### Not Found Errors
-
-**Code:** `NOT_FOUND`
-```json
-{
-  "errors": [
-    {
-      "message": "Student with ID student-123 not found",
-      "extensions": {
-        "code": "NOT_FOUND",
-        "resource": "Student",
-        "id": "student-123"
-      }
-    }
-  ]
-}
-```
-
-### Conflict Errors
-
-**Code:** `CONFLICT`
-```json
-{
-  "errors": [
-    {
-      "message": "User with this email already exists",
-      "extensions": {
-        "code": "CONFLICT"
-      }
-    }
-  ]
-}
-```
-
----
-
-## Rate Limiting
-
-Currently not implemented. Recommended for production:
-- 100 requests per minute per IP
-- 1000 requests per hour per user
-
-## Pagination
-
-All paginated endpoints support:
-- `page` (default: 1)
-- `limit` (default: 10, max: 100)
-
-Response includes:
-```json
-{
-  "pagination": {
-    "total": 150,
-    "page": 1,
-    "limit": 20,
-    "totalPages": 8,
-    "hasNextPage": true,
-    "hasPreviousPage": false
-  }
-}
-```
-
-## Caching
-
-Redis caching is implemented for:
-- Student profiles (TTL: 1 hour)
-- Class sections (TTL: 1 hour)
-- Attendance summaries (TTL: 30 minutes)
-- Exam results (TTL: 1 hour)
-
-Cache is automatically invalidated on updates.

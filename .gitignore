@@ -1,4 +1,8 @@
 .DS_Store
 node_modules
 yarn.lock
-
+build/
+.next/.next
+/.next
+/node_modules
+*node_modules

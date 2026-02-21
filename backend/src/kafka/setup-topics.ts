@@ -1,6 +1,6 @@
-import kafka from './config/kafka';
-import { TOPICS } from './kafka/topics';
-import { logger } from './utils/logger';
+import kafka from '../config/kafka';
+import { TOPICS } from './topics';
+import { logger } from '../utils/logger';
 
 async function setupTopics() {
     const admin = kafka.admin();

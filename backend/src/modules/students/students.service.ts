@@ -68,10 +68,16 @@ export class StudentsService {
         const cached = await cache.get(`${this.CACHE_PREFIX}${id}`);
         if (cached) {
             logger.debug('Student retrieved from cache', { studentId: id });
-            return cached;
+            return cached as Awaited<ReturnType<typeof this.fetchStudentFromDb>>;
         }
 
-        // Fetch from database
+        return this.fetchStudentFromDb(id);
+    }
+
+    /**
+     * Fetch student from database (helper for type inference)
+     */
+    private async fetchStudentFromDb(id: string) {
         const student = await prisma.student.findUnique({
             where: { id },
             include: {

@@ -75,9 +75,16 @@ export class FeesService {
         // Try cache first
         const cached = await cache.get(cacheKey);
         if (cached) {
-            return cached;
+            return cached as Awaited<ReturnType<typeof this.fetchInvoiceFromDb>>;
         }
 
+        return this.fetchInvoiceFromDb(id, cacheKey);
+    }
+
+    /**
+     * Fetch invoice from database (helper for type inference)
+     */
+    private async fetchInvoiceFromDb(id: string, cacheKey: string) {
         const invoice = await prisma.feeInvoice.findUnique({
             where: { id },
             include: {
@@ -222,7 +229,7 @@ export class FeesService {
             studentId: invoice.studentId,
             amount: payment.amount,
             method: payment.method,
-            txRef: payment.txRef,
+            txRef: payment.txRef || undefined,
         });
 
         // Invalidate cache

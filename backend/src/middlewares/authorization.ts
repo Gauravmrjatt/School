@@ -130,7 +130,7 @@ export const hasPermission = (
     user: TokenPayload,
     permission: keyof typeof PERMISSIONS
 ): boolean => {
-    const allowedRoles = PERMISSIONS[permission];
+    const allowedRoles = PERMISSIONS[permission] as readonly UserRole[];
     return allowedRoles.includes(user.role as UserRole);
 };
 

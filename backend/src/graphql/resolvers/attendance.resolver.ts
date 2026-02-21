@@ -19,7 +19,7 @@ export const attendanceResolvers = {
 
             // Check if user can access this student's data
             const student = await studentsService.getStudentById(studentId);
-            canAccessStudent(user, student.userId);
+            canAccessStudent(user, student.user.id);
 
             return await attendanceService.getAttendanceForStudent(
                 studentId,

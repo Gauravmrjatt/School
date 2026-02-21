@@ -13,7 +13,7 @@ export const subscriptionResolvers = {
                 { classSectionId }: { classSectionId: string },
                 context: GraphQLContext
             ) => {
-                const user = requireAuth(context);
+                requireAuth(context);
                 // In production, you'd check if user has access to this class section
 
                 const channel = CHANNELS.ATTENDANCE(classSectionId);
@@ -34,7 +34,7 @@ export const subscriptionResolvers = {
 
                 // Check if user can access this student's data
                 const student = await studentsService.getStudentById(studentId);
-                canAccessStudent(user, student.userId);
+                canAccessStudent(user, student.user.id);
 
                 const channel = CHANNELS.EXAM_RESULTS(studentId);
                 return pubsub.asyncIterator(channel);
