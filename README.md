@@ -1,72 +1,67 @@
 # School Management System
 
-A full-stack school management platform: a TypeScript GraphQL backend with an event-driven service layer, plus a Next.js frontend.
+A school management backend in TypeScript, plus a Next.js front end. Covers students, teachers, classes, attendance, exams, fee invoices and payments.
 
-The backend has detailed architecture documentation in [`backend/README.md`](backend/README.md).
+The backend has its own architecture notes in [`backend/README.md`](backend/README.md).
 
-## Highlights
+## What it does
 
-- **Apollo Server v4** GraphQL API with **WebSocket subscriptions**
-- **PostgreSQL + Prisma ORM** — 11 models covering students, teachers, classes, attendance, exams, fees and payments
-- **Redis** for caching and shared state
-- **Kafka** event backbone, with a topic bootstrap script
-- **JWT access + refresh tokens**, bcrypt password hashing
-- **Role-based access control** (`UserRole`)
-- **Docker + Docker Compose** for local services
+- Apollo Server v4 GraphQL API with WebSocket subscriptions
+- Ten Prisma models: `User`, `Student`, `Teacher`, `ClassSection`, `Enrollment`, `Attendance`, `Exam`, `ExamResult`, `FeeInvoice`, `Payment`
+- Kafka carries four event types: `attendance.recorded`, `exam.results.published`, `payment.completed`, `user.created`
+- Redis pub/sub fans results out to subscribers, channel per class or per student
+- JWT access and refresh tokens, bcrypt hashing, role based access
+- Docker and Docker Compose for local services
 
-## Repository layout
+About 6,600 lines across 59 files.
+
+## Layout
 
 ```
-backend/    TypeScript · Apollo GraphQL · Prisma · Redis · Kafka
-frontend/   Next.js · Apollo Client · react-hook-form · Framer Motion
+backend/    TypeScript, Apollo GraphQL, Prisma, Redis, Kafka
+frontend/   Next.js, Apollo Client, react-hook-form, Framer Motion
 ```
 
-## Data model
-
-`User` · `Student` · `Teacher` · `ClassSection` · `Enrollment` · `Attendance` · `Exam` · `ExamResult` · `FeeInvoice` · `Payment`
-
-Enums: `UserRole`, `AttendanceStatus`, `InvoiceStatus`, `Gender`, `PaymentMethod`
-
-## Running the backend
+## Run the backend
 
 ```bash
 cd backend
 npm install
-cp .env.example .env          # fill in the values
+cp .env.example .env          # fill it in
 npm run prisma:generate
 npm run prisma:migrate
-npm run kafka:topics          # create the Kafka topics
+npm run kafka:topics          # creates the four topics
 npm run dev                   # Apollo Server on :4000
 ```
 
-### Backend environment
+### Environment
 
 | Variable | Purpose |
 |---|---|
-| `DATABASE_URL` | PostgreSQL connection string |
-| `REDIS_HOST` / `REDIS_PORT` / `REDIS_PASSWORD` | Redis connection |
-| `KAFKA_BROKERS` / `KAFKA_CLIENT_ID` / `KAFKA_GROUP_ID` | Kafka connection |
-| `JWT_ACCESS_SECRET` / `JWT_REFRESH_SECRET` | Token signing |
-| `JWT_ACCESS_EXPIRY` / `JWT_REFRESH_EXPIRY` | Token lifetimes |
-| `BCRYPT_SALT_ROUNDS` | Password hashing cost |
-| `PORT` / `NODE_ENV` / `LOG_LEVEL` | Server config |
+| `DATABASE_URL` | Postgres connection string |
+| `REDIS_HOST`, `REDIS_PORT`, `REDIS_PASSWORD` | Redis |
+| `KAFKA_BROKERS`, `KAFKA_CLIENT_ID`, `KAFKA_GROUP_ID` | Kafka |
+| `JWT_ACCESS_SECRET`, `JWT_REFRESH_SECRET` | Token signing |
+| `JWT_ACCESS_EXPIRY`, `JWT_REFRESH_EXPIRY` | Token lifetimes |
+| `BCRYPT_SALT_ROUNDS` | Hashing cost |
+| `PORT`, `NODE_ENV`, `LOG_LEVEL` | Server config |
 
-See `backend/.env.example` for the full list.
+`backend/.env.example` has the full list.
 
-### Backend scripts
+### Scripts
 
-| Command | Description |
+| Command | What it does |
 |---|---|
-| `npm run dev` | Dev server with `ts-node-dev` |
-| `npm run build` | Compile TypeScript, copy the GraphQL schema |
+| `npm run dev` | Dev server via `ts-node-dev` |
+| `npm run build` | Compile TypeScript and copy the GraphQL schema |
 | `npm start` | Run the compiled server |
 | `npm run prisma:generate` | Generate the Prisma client |
 | `npm run prisma:migrate` | Create and apply a dev migration |
 | `npm run prisma:deploy` | Apply migrations in production |
 | `npm run prisma:studio` | Open Prisma Studio |
-| `npm run kafka:topics` | Bootstrap Kafka topics |
+| `npm run kafka:topics` | Create Kafka topics |
 
-## Running the frontend
+## Run the frontend
 
 ```bash
 cd frontend
@@ -76,5 +71,5 @@ npm run dev
 
 ## Notes
 
-- `backend/API_DOCUMENTATION.md` documents the GraphQL schema in detail.
-- Build output (`frontend/.next/`) is committed to the repository. Run `git rm -r --cached frontend/.next` and add it to `.gitignore` to keep the tree clean.
+- `backend/API_DOCUMENTATION.md` documents the GraphQL schema.
+- `frontend/.next/` build output is committed (99 files). Run `git rm -r --cached frontend/.next` and gitignore it to keep the tree readable.
